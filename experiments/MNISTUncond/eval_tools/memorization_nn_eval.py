@@ -19,9 +19,11 @@ Outputs:
 from __future__ import annotations
 
 import argparse
+import copy
 import os
 import pickle
 import sys
+import time
 
 import dnnlib
 import matplotlib
@@ -36,7 +38,6 @@ if _DMD2_ROOT not in sys.path:
     sys.path.insert(0, _DMD2_ROOT)
 
 from main.data.lmdb_dataset import LMDBDataset
-from main.edm.test_folder_edm import create_generator
 
 
 def _parse_thresholds(values: list[str]) -> list[float]:
@@ -291,12 +292,30 @@ def main() -> None:
     if not os.path.isfile(student_path):
         raise FileNotFoundError(f"Missing student checkpoint: {student_path}")
 
-    student = create_generator(
-        student_path,
-        base_model=None,
-        dataset_name="mnist",
-        label_dim_override=args.label_dim,
-    ).to(device)
+    with dnnlib.util.open_url(args.teacher_pkl, verbose=False) as f:
+        student = pickle.load(f)["ema"]
+    if hasattr(student, "model") and hasattr(student.model, "map_augment"):
+        del student.model.map_augment
+        student.model.map_augment = None
+    student = copy.deepcopy(student)
+    while True:
+        try:
+            state_dict = torch.load(student_path, map_location="cpu")
+            break
+        except Exception:
+            print(f"fail to load checkpoint {student_path}", flush=True)
+            time.sleep(1)
+    try:
+        print(student.load_state_dict(state_dict, strict=True))
+    except RuntimeError as e:
+        raise RuntimeError(
+            "Failed to load student checkpoint with strict=True due to teacher/student architecture mismatch.\n"
+            f"student_path={student_path}\n"
+            f"teacher_pkl={args.teacher_pkl}\n"
+            "Hint: teacher and student checkpoints are likely from different runs. "
+            "Set --teacher_pkl to the teacher checkpoint used for this student's distillation."
+        ) from e
+    student = student.to(device)
     student.eval()
     s = run_student_batches(student, latents_cpu, one_hot_cpu, args.conditioning_sigma, device, args.batch_size)
     del student

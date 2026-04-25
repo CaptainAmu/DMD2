@@ -13,8 +13,8 @@
 
 export DMD2_ROOT="/slurm-storage/shucli/PROJECT_FOLDER/DMD2"
 export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
-export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-006144.pkl}"
-export STUDENT_DIR="${STUDENT_DIR:-${DMD2_ROOT}/experiments/MNISTUncond/t6144_NoGAN}"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-001024.pkl}"
+export STUDENT_DIR="${STUDENT_DIR:-${DMD2_ROOT}/experiments/MNISTUncond/t1024_NoGAN_150500}"
 export TRAIN_LMDB="${TRAIN_LMDB:-${CHECKPOINT_PATH}/mnist-32x32_lmdb}"
 
 NUM_SAMPLES="${NUM_SAMPLES:-1000}"

@@ -198,13 +198,21 @@ def main():
         "--checkpoint_path",
         type=str,
         default=None,
-        help="Dir containing mnist_checkpoint_model/network-snapshot-*.pkl (see --teacher_pkl).",
+        help=(
+            "Base checkpoint directory containing "
+            "mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-"
+            "mnist_uncond_edm_teacher/network-snapshot-001024.pkl (see --teacher_pkl)."
+        ),
     )
     parser.add_argument(
         "--teacher_pkl",
         type=str,
         default=None,
-        help="Full path to teacher pickle (default: CHECKPOINT_PATH/mnist_checkpoint_model/network-snapshot-004659.pkl).",
+        help=(
+            "Full path to teacher pickle (default: CHECKPOINT_PATH/"
+            "mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-"
+            "mnist_uncond_edm_teacher/network-snapshot-001024.pkl)."
+        ),
     )
     parser.add_argument("--class_idx", type=int, required=True, help="MNIST digit class 0..9 (fixed conditioning).")
     parser.add_argument("--num_samples", type=int, default=100)
@@ -231,7 +239,12 @@ def main():
     if args.teacher_pkl:
         teacher_pkl = args.teacher_pkl
     elif args.checkpoint_path:
-        teacher_pkl = os.path.join(args.checkpoint_path, "mnist_checkpoint_model", "network-snapshot-004659.pkl")
+        teacher_pkl = os.path.join(
+            args.checkpoint_path,
+            "mnist_uncond_edm_teacher_runs",
+            "00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher",
+            "network-snapshot-001024.pkl",
+        )
     else:
         parser.error("Provide --teacher_pkl or --checkpoint_path")
 

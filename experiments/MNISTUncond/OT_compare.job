@@ -8,11 +8,11 @@
 #SBATCH --mem=64000
 #SBATCH --time=8:00:00
 #SBATCH --qos=medium
-#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/logs/OT_compare_%j.out
-#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/logs/OT_compare_%j.err
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/OT_compare_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/OT_compare_%j.err
 
 export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
-export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_checkpoint_model/network-snapshot-004659.pkl}"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-001024.pkl}"
 
 CLASS_IDX="${CLASS_IDX:-0}"
 NUM_SAMPLES="${NUM_SAMPLES:-100}"
@@ -20,7 +20,7 @@ NUM_STEPS="${NUM_STEPS:-8}"
 BATCH_SIZE="${BATCH_SIZE:-20}"
 SEED="${SEED:-0}"
 COST="${COST:-sqeuclidean}"
-OUT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/OT_compare"
+OUT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/OT_compare"
 
 source /slurm-storage/miniconda3/etc/profile.d/conda.sh
 conda activate dmd2_h100
@@ -29,10 +29,10 @@ export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
 
 cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
 export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:${PYTHONPATH}
-mkdir -p experiments/MNIST/logs
-mkdir -p experiments/MNIST/OT_compare
+mkdir -p experiments/MNISTUncond/logs
+mkdir -p experiments/MNISTUncond/OT_compare
 
-python experiments/MNIST/eval_tools/ot_noise_image_compare.py \
+python experiments/MNISTUncond/eval_tools/ot_noise_image_compare.py \
   --teacher_pkl "${TEACHER_PKL}" \
   --class_idx "${CLASS_IDX}" \
   --num_samples "${NUM_SAMPLES}" \

@@ -10,6 +10,8 @@
 *.npz
 *.pth
 
+*.npy
+
 
 # datasets
 train_MNIST/data

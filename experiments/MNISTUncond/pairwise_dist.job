@@ -8,21 +8,21 @@
 #SBATCH --mem=64000
 #SBATCH --time=4:00:00
 #SBATCH --qos=medium
-#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/logs/pairwise_dist_%j.out
-#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/logs/pairwise_dist_%j.err
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/pairwise_dist_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/pairwise_dist_%j.err
 
 export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
-export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_checkpoint_model/network-snapshot-004659.pkl}"
-export STUDENT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/checkpoint_model_009500"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-001024.pkl}"
+export STUDENT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/t1024_NoGAN_150500"
 NUM_IMAGES=1000
 
 PYTHON=/slurm-storage/shucli/.conda/envs/dmd2_h100/bin/python
 
 cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
 export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
-mkdir -p /slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/logs
+mkdir -p /slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs
 
-$PYTHON experiments/MNIST/eval_tools/pairwise_dist.py \
+$PYTHON experiments/MNISTUncond/eval_tools/pairwise_dist.py \
   --student_ckpt_dir "${STUDENT_DIR}" \
   --teacher_pkl      "${TEACHER_PKL}" \
   --out_dir          "${STUDENT_DIR}" \
