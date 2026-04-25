@@ -1,0 +1,47 @@
+#!/bin/bash
+#SBATCH --job-name=randommlp_sep_edm_teacher
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64000
+#SBATCH --time=48:00:00
+#SBATCH --qos=long
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/train_teacher_random_mlp_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/train_teacher_random_mlp_%j.err
+
+# EDM teacher on column-separated random-mlp-manifold ZIP (launch_train_mnist_edm.sh). Single GPU only (#SBATCH --gres=gpu:1).
+export CHECKPOINT_PATH="${CHECKPOINT_PATH:-/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints}"
+export DATA_ZIP="${DATA_ZIP:-${CHECKPOINT_PATH}/random-mlp-manifold-sep-32x32.zip}"
+export OUTDIR="${OUTDIR:-${CHECKPOINT_PATH}/randommlpmfld_sep_edm_teacher_runs}"
+export DURATION="${DURATION:-200}"
+export BATCH="${BATCH:-32}"
+export SEED="${SEED:-0}"
+export WORKERS="${WORKERS:-0}"
+export TICK="${TICK:-1}"
+
+# EDM still does one-process init_process_group; default port 29500 conflicts if shared. Override with MASTER_PORT=... if needed.
+export MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
+[[ -n "${MASTER_PORT:-}" ]] || export MASTER_PORT=$((29500 + (${SLURM_JOB_ID:-$$} % 2000)))
+
+PROJECT_ROOT="${PROJECT_ROOT:-/slurm-storage/shucli/PROJECT_FOLDER}"
+DMD2_ROOT="${DMD2_ROOT:-${PROJECT_ROOT}/DMD2}"
+TRAIN_MNIST="${DMD2_ROOT}/train_MNIST"
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+mkdir -p "${DMD2_ROOT}/experiments/RandomMLPMfldSep/logs"
+export PATH="$(dirname "${CONDA_PREFIX:-}/bin/python"):${PATH}"
+export PYTHON="${PYTHON:-python}"
+cd "${DMD2_ROOT}"
+export OUTDIR
+export DATA_ZIP
+
+if [[ ! -f "${DATA_ZIP}" ]]; then
+  echo "Missing DATA_ZIP=${DATA_ZIP}. Run experiments/RandomMLPMfldSep/create_random_mlp_manifold_lmdb.job first."
+  exit 1
+fi
+
+exec bash "${TRAIN_MNIST}/launch_train_mnist_edm.sh"

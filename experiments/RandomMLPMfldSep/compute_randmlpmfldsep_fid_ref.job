@@ -1,0 +1,31 @@
+#!/bin/bash
+#SBATCH --job-name=random_mlpmfld_sep_fid_ref
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64000
+#SBATCH --time=8:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/random_mlpmfld_fid_ref_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/random_mlpmfld_fid_ref_%j.err
+
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+export LMDB_PATH="${LMDB_PATH:-${CHECKPOINT_PATH}/random_mlp_manifold_sep-32x32_lmdb}"
+export OUT_NPZ="${OUT_NPZ:-${CHECKPOINT_PATH}/random_mlp_manifold_sep_fid_refs_edm.npz}"
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p experiments/RandomMLPMfldSep/logs
+
+python experiments/RandomMLPMfld/eval_tools/compute_mnist_fid_ref.py \
+  --lmdb_path "${LMDB_PATH}" \
+  --out_path "${OUT_NPZ}" \
+  --detector_url "${CHECKPOINT_PATH}/inception-2015-12-05.pkl" \
+  --num_samples 50000 \
+  --batch_size 128 \
+  --seed 0

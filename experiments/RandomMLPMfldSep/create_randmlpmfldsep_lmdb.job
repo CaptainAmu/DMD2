@@ -1,0 +1,42 @@
+#!/bin/bash
+#SBATCH --job-name=random_mlp_lmdb_sep
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32000
+#SBATCH --time=02:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/create_random_mlp_manifold_lmdb_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/create_random_mlp_manifold_lmdb_%j.err
+
+export CHECKPOINT_PATH="${CHECKPOINT_PATH:-/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints}"
+export LMDB_PATH="${LMDB_PATH:-${CHECKPOINT_PATH}/random_mlp_manifold_sep-32x32_lmdb}"
+export ZIP_PATH="${ZIP_PATH:-${CHECKPOINT_PATH}/random-mlp-manifold-sep-32x32.zip}"
+export WEIGHTS_OUT="${WEIGHTS_OUT:-${CHECKPOINT_PATH}/random_mlp_manifold_sep_weights.pt}"
+export INCLUDE_TEST="${INCLUDE_TEST:-1}"
+export LOGIT_SCALE="${LOGIT_SCALE:-20}"
+export CLASS_COLUMN_BRIGHTNESS_DELTA="${CLASS_COLUMN_BRIGHTNESS_DELTA:-0.7}"
+
+DMD2_ROOT="${DMD2_ROOT:-/slurm-storage/shucli/PROJECT_FOLDER/DMD2}"
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+cd "${DMD2_ROOT}"
+export PYTHONPATH="${DMD2_ROOT}:$PYTHONPATH"
+mkdir -p "${DMD2_ROOT}/experiments/RandomMLPMfldSep/logs"
+
+EXTRA=()
+if [[ "${INCLUDE_TEST}" == "1" ]]; then
+  EXTRA+=(--include_test)
+fi
+
+python main/data/create_random_mlp_manifold_lmdb.py \
+  --lmdb_path "${LMDB_PATH}" \
+  --zip_path "${ZIP_PATH}" \
+  --weights_out "${WEIGHTS_OUT}" \
+  --logit_scale "${LOGIT_SCALE}" \
+  --class_column_brightness_delta "${CLASS_COLUMN_BRIGHTNESS_DELTA}" \
+  --seed 0 \
+  "${EXTRA[@]}"

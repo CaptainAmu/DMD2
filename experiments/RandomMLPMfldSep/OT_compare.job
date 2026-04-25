@@ -1,0 +1,46 @@
+#!/bin/bash
+#SBATCH --job-name=random_mlpmfld_sep_ot_compare
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64000
+#SBATCH --time=8:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/OT_compare_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/OT_compare_%j.err
+
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/randommlpmfld_sep_edm_teacher_runs/00000-random-mlp-manifold-sep-32x32-cond-adm-edm-gpus1-batch32-fp32-mnist_edm_teacher/network-snapshot-002560.pkl}"
+
+CLASS_IDX="${CLASS_IDX:-0}"
+NUM_SAMPLES="${NUM_SAMPLES:-100}"
+NUM_STEPS="${NUM_STEPS:-8}"
+BATCH_SIZE="${BATCH_SIZE:-20}"
+SEED="${SEED:-0}"
+COST="${COST:-sqeuclidean}"
+OUT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/OT_compare"
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+# SciPy: prefer conda libstdc++ (libstdcxx-ng) over system /lib.
+export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:${PYTHONPATH}
+mkdir -p experiments/RandomMLPMfldSep/logs
+mkdir -p experiments/RandomMLPMfldSep/OT_compare
+
+python experiments/RandomMLPMfld/eval_tools/ot_noise_image_compare.py \
+  --teacher_pkl "${TEACHER_PKL}" \
+  --class_idx "${CLASS_IDX}" \
+  --num_samples "${NUM_SAMPLES}" \
+  --resolution 32 \
+  --label_dim 10 \
+  --img_channels 1 \
+  --batch_size "${BATCH_SIZE}" \
+  --num_steps "${NUM_STEPS}" \
+  --seed "${SEED}" \
+  --out_dir "${OUT_DIR}" \
+  --cost "${COST}"

@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH --job-name=rc2_lmdb_prev
+#SBATCH --partition=normal
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=8000
+#SBATCH --time=00:20:00
+#SBATCH --output=logs/preview_lmdb_%j.out
+#SBATCH --error=logs/preview_lmdb_%j.err
+
+export CHECKPOINT_PATH="${CHECKPOINT_PATH:-/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints}"
+export LMDB="${LMDB:-$CHECKPOINT_PATH/random_chi2-32x32_lmdb}"
+export OUT="${OUT:-$CHECKPOINT_PATH/random_chi2_lmdb_preview.png}"
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh && conda activate dmd2_h100
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2 && export PYTHONPATH=$PWD:$PYTHONPATH
+mkdir -p experiments/RandomChi2/logs
+python experiments/MNIST/eval_tools/preview_lmdb_grid.py "$LMDB" -o "$OUT"

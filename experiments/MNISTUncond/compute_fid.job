@@ -1,0 +1,38 @@
+#!/bin/bash
+#SBATCH --job-name=mnist_compute_fid
+#SBATCH --partition=h100
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=128000
+#SBATCH --time=24:00:00
+#SBATCH --qos=medium
+#SBATCH --output=logs/mnist_compute_fid_%j.out
+#SBATCH --error=logs/mnist_compute_fid_%j.err
+
+# Requires precomputed reference stats (see compute_mnist_fid_ref.job).
+# FID is written to STUDENT_DIR/fid_once.txt
+
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+export STUDENT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/checkpoint_model_090000"
+export REF_NPZ="${REF_NPZ:-${CHECKPOINT_PATH}/mnist_fid_refs_edm.npz}"
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p experiments/MNIST/logs
+
+python experiments/MNIST/eval_tools/eval_fid_once.py \
+  --checkpoint_dir "${STUDENT_DIR}" \
+  --ref_path "${REF_NPZ}" \
+  --detector_url "${CHECKPOINT_PATH}/inception-2015-12-05.pkl" \
+  --total_eval_samples 50000 \
+  --eval_batch_size 128 \
+  --seed 10 \
+  --conditioning_sigma 80.0 \
+  --resolution 32 \
+  --label_dim 10 \
+  --img_channels 1

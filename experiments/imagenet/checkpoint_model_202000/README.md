@@ -1,0 +1,1 @@
+This ```checkpoint_model_202000``` was copied from ```/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints/imagenet_gan_classifier_genloss3e-3_diffusion1000_lr2e-6_scratch``` as a result of ImageNet 64 student distillation training.

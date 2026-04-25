@@ -1,0 +1,2 @@
+1292.280546875
+cost_metric=sqeuclidean

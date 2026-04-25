@@ -1,0 +1,52 @@
+{
+  "dataset_kwargs": {
+    "class_name": "training.dataset.ImageFolderDataset",
+    "path": "/slurm-storage/shucli/PROJECT_FOLDER/DMD2/train_MNIST/data/mnist-32x32.zip",
+    "use_labels": true,
+    "xflip": false,
+    "cache": true,
+    "resolution": 32,
+    "max_size": 60000
+  },
+  "data_loader_kwargs": {
+    "pin_memory": true,
+    "num_workers": 4,
+    "prefetch_factor": 2
+  },
+  "network_kwargs": {
+    "model_type": "DhariwalUNet",
+    "model_channels": 64,
+    "channel_mult": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "class_name": "training.networks.EDMPrecond",
+    "dropout": 0.0,
+    "use_fp16": false
+  },
+  "loss_kwargs": {
+    "class_name": "training.loss.EDMLoss"
+  },
+  "optimizer_kwargs": {
+    "class_name": "torch.optim.Adam",
+    "lr": 0.0001,
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "eps": 1e-08
+  },
+  "total_kimg": 200000,
+  "ema_halflife_kimg": 500,
+  "batch_size": 32,
+  "batch_gpu": null,
+  "loss_scaling": 1.0,
+  "cudnn_benchmark": true,
+  "kimg_per_tick": 1,
+  "snapshot_ticks": 50,
+  "state_dump_ticks": 500,
+  "seed": 0,
+  "run_dir": "/slurm-storage/shucli/PROJECT_FOLDER/DMD2/train_MNIST/runs/00005-mnist-32x32-cond-adm-edm-gpus1-batch32-fp32-mnist_edm_teacher"
+}

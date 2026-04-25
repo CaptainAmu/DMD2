@@ -1,0 +1,60 @@
+#!/bin/bash
+#SBATCH --job-name=dmd2_mnist_distill
+#SBATCH --partition=h100
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=128000
+#SBATCH --time=72:00:00
+#SBATCH --qos=long
+#SBATCH --output=logs/dmd2_mnist_%j.out
+#SBATCH --error=logs/dmd2_mnist_%j.err
+
+# ── User settings ────────────────────────────────────────────────────────────
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+export WANDB_ENTITY="shucheng_li-university-of-oxford"
+export WANDB_PROJECT="DMD2_MNIST32_Train"
+# Teacher pickle (same arch as train_MNIST EDM teacher)
+export TEACHER_PKL="${CHECKPOINT_PATH}/mnist_checkpoint_model/network-snapshot-004659.pkl"
+export REAL_LMDB="${CHECKPOINT_PATH}/mnist-32x32_lmdb"
+# ─────────────────────────────────────────────────────────────────────────────
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p logs
+
+# Single-process (non-distributed) run on one GPU; Accelerate does not need torchrun for nproc=1.
+# python -u: unbuffered stdout/stderr so Slurm .out/.err update promptly.
+# log_iters = checkpoint save period (small value = frequent disk writes). wandb_iters = W&B image/metric cadence.
+CUDA_VISIBLE_DEVICES=0 python -u main/edm/train_edm.py \
+    --generator_lr 2e-6 \
+    --guidance_lr 2e-6 \
+    --train_iters 10000000 \
+    --output_path "${CHECKPOINT_PATH}/mnist_gan_classifier_scratch" \
+    --batch_size 32 \
+    --initialie_generator --log_iters 500 \
+    --resolution 32 \
+    --label_dim 10 \
+    --img_channels 1 \
+    --dataset_name "mnist" \
+    --seed 10 \
+    --model_id "${TEACHER_PKL}" \
+    --wandb_iters 5 \
+    --wandb_entity "${WANDB_ENTITY}" \
+    --wandb_project "${WANDB_PROJECT}" \
+    --wandb_name "mnist_gan_classifier_scratch_1gpu" \
+    --real_image_path "${REAL_LMDB}" \
+    --dfake_gen_update_ratio 5 \
+    --cls_loss_weight 1e-2 \
+    --gan_classifier \
+    --gan_disc_head bottleneck_gap_linear \
+    --gan_bottleneck_channels 256 \
+    --gen_cls_loss_weight 3e-3 \
+    --diffusion_gan \
+    --diffusion_gan_max_timestep 1000 \
+    --delete_ckpts \
+    --max_checkpoint 500

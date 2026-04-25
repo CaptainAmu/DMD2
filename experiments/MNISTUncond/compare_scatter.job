@@ -1,0 +1,38 @@
+#!/bin/bash
+#SBATCH --job-name=mnist_compare_scatter
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64000
+#SBATCH --time=4:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/logs/compare_scatter_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/logs/compare_scatter_%j.err
+
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_checkpoint_model/network-snapshot-004659.pkl}"
+# Distilled student Accelerate folder (contains pytorch_model.bin). Override if needed.
+export STUDENT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/checkpoint_model_009500"
+
+NUM_IMAGES=5000
+BATCH_SIZE=20
+SEED=0
+
+PYTHON=/slurm-storage/shucli/.conda/envs/dmd2_h100/bin/python
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p /slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNIST/logs
+
+$PYTHON experiments/MNIST/eval_tools/pca_triplet_teacher8_teacher1_student1.py \
+  --student_ckpt_dir "${STUDENT_DIR}" \
+  --teacher_pkl      "${TEACHER_PKL}" \
+  --num_images       ${NUM_IMAGES} \
+  --batch_size       ${BATCH_SIZE} \
+  --seed             ${SEED} \
+  --resolution       32 \
+  --label_dim        10 \
+  --img_channels     1 \
+  --out_path         "${STUDENT_DIR}/teacher8_teacher1_student1.png"

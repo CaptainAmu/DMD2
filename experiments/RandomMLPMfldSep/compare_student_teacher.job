@@ -1,0 +1,40 @@
+#!/bin/bash
+#SBATCH --job-name=random_mlpmfld_sep_st_compare
+#SBATCH --partition=h100
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64000
+#SBATCH --time=8:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/compare_student_teacher_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/RandomMLPMfldSep/logs/compare_student_teacher_%j.err
+
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+DMD2_ROOT="/slurm-storage/shucli/PROJECT_FOLDER/DMD2"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/randommlpmfld_sep_edm_teacher_runs/00000-random-mlp-manifold-sep-32x32-cond-adm-edm-gpus1-batch32-fp32-mnist_edm_teacher/network-snapshot-002560.pkl}"
+export STUDENT_DIR="${STUDENT_DIR:-${DMD2_ROOT}/experiments/RandomMLPMfldSep/checkpoint_model_005000}"
+
+NUM_IMAGES=30
+OUT_DIR="${STUDENT_DIR}"
+OUT_PNG="${OUT_DIR}/teacher_student_comparison_4rows.png"
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p experiments/RandomMLPMfldSep/logs
+
+python experiments/RandomMLPMfld/eval_tools/compare_student_teacher_grid.py \
+  --student_ckpt_dir "${STUDENT_DIR}" \
+  --teacher_pkl "${TEACHER_PKL}" \
+  --out_path "${OUT_PNG}" \
+  --num_images $NUM_IMAGES \
+  --seed 0 \
+  --resolution 32 \
+  --label_dim 10 \
+  --img_channels 1 \
+  --teacher_batch_size 20 \
+  --student_batch_size 20

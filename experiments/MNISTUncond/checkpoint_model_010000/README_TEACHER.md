@@ -1,0 +1,1 @@
+This student was distilled on the teacher snapshot ```/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-008192.pkl``` WITH GAN.

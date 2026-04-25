@@ -1,0 +1,53 @@
+#!/bin/bash
+#SBATCH --job-name=3072_distill_mnist
+#SBATCH --partition=h100
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=128000
+#SBATCH --time=24:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/dmd2_mnist_uncond_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/dmd2_mnist_uncond_%j.err
+
+# ── User settings ────────────────────────────────────────────────────────────
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+export WANDB_ENTITY="shucheng_li-university-of-oxford"
+export WANDB_PROJECT="DMD2_MNIST32_Uncond_Train"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-003072.pkl}"
+export REAL_LMDB="${CHECKPOINT_PATH}/mnist-32x32_lmdb"
+# ─────────────────────────────────────────────────────────────────────────────
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p experiments/MNISTUncond/logs
+
+# Single-process (non-distributed) run on one GPU; Accelerate does not need torchrun for nproc=1.
+# python -u: unbuffered stdout/stderr so Slurm .out/.err update promptly.
+# log_iters = checkpoint to disk. wandb_iters = scalar metrics cadence. wandb_image_iters = image panels (rarer to save W&B size).
+CUDA_VISIBLE_DEVICES=0 python -u main/edm/train_edm.py \
+    --generator_lr 2e-6 \
+    --guidance_lr 2e-6 \
+    --train_iters 50000 \
+    --output_path "${CHECKPOINT_PATH}/mnist_uncond_scratch" \
+    --batch_size 32 \
+    --initialie_generator --log_iters 500 \
+    --resolution 32 \
+    --label_dim 0 \
+    --img_channels 1 \
+    --dataset_name "mnist" \
+    --seed 10 \
+    --model_id "${TEACHER_PKL}" \
+    --wandb_iters 5 \
+    --wandb_image_iters 1000 \
+    --wandb_entity "${WANDB_ENTITY}" \
+    --wandb_project "${WANDB_PROJECT}" \
+    --wandb_name "t3072_NoGAN" \
+    --real_image_path "${REAL_LMDB}" \
+    --dfake_gen_update_ratio 5 \
+    --delete_ckpts \
+    --max_checkpoint 500

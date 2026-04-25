@@ -1,0 +1,35 @@
+#!/bin/bash
+#SBATCH --job-name=imagenet_class_distance
+#SBATCH --partition=h100
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64000
+#SBATCH --time=4:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/imagenet/logs/class_distance_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/imagenet/logs/class_distance_%j.err
+
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+DMD2_ROOT="/slurm-storage/shucli/PROJECT_FOLDER/DMD2"
+OUT_DIR="${DMD2_ROOT}/experiments/imagenet/class_distance"
+
+PYTHON=/slurm-storage/shucli/.conda/envs/dmd2_h100/bin/python
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p /slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/imagenet/logs
+mkdir -p "${OUT_DIR}"
+
+$PYTHON experiments/imagenet/eval_tools/class_distance.py \
+  --teacher_pkl "${CHECKPOINT_PATH}/edm-imagenet-64x64-cond-adm.pkl" \
+  --out_dir     "${OUT_DIR}" \
+  --batch_size  20 \
+  --resolution  64 \
+  --label_dim     1000 \
+  --img_channels  3 \
+  --num_sample_classes 100 \
+  --num_per_class 50 \
+  --seed          0 \
+  --num_steps     1

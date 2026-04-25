@@ -1,0 +1,15 @@
+memorization_nn_eval summary
+teacher_pkl=/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-006144.pkl
+student_ckpt_dir=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/t6144_NoGAN
+train_lmdb=/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints/mnist-32x32_lmdb
+N=1000
+num_train_images=70000
+seed=0
+teacher_num_steps=8
+conditioning_sigma=80.0
+mean_d=11.12489700
+
+threshold	memorized_percent
+0.25	0.000000
+0.1	0.000000
+0.05	0.000000

@@ -1,0 +1,41 @@
+#!/bin/bash
+#SBATCH --job-name=mnist_lmdb
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32000
+#SBATCH --time=02:00:00
+#SBATCH --qos=medium
+#SBATCH --output=logs/create_mnist_lmdb_%j.out
+#SBATCH --error=logs/create_mnist_lmdb_%j.err
+
+# Build MNIST LMDB for train_edm (needs conda env with `lmdb`, e.g. dmd2_h100).
+# From DMD2 repo root: sbatch experiments/MNIST/create_mnist_lmdb_h100.job
+
+# ── User settings ────────────────────────────────────────────────────────────
+export LMDB_PATH="${LMDB_PATH:-/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints/mnist-32x32_lmdb}"
+# 只要训练集：提交前 export MNIST_INCLUDE_TEST=0
+export MNIST_INCLUDE_TEST="${MNIST_INCLUDE_TEST:-1}"
+# 可选：torchvision MNIST 下载目录
+export MNIST_ROOT="${MNIST_ROOT:-}"
+# ─────────────────────────────────────────────────────────────────────────────
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p logs
+
+EXTRA=()
+if [[ -n "${MNIST_ROOT}" ]]; then
+  EXTRA+=(--root "${MNIST_ROOT}")
+fi
+if [[ "${MNIST_INCLUDE_TEST}" == "1" ]]; then
+  EXTRA+=(--include_test)
+fi
+
+python main/data/create_mnist_lmdb.py \
+  --lmdb_path "${LMDB_PATH}" \
+  "${EXTRA[@]}"
