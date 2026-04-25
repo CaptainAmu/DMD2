@@ -1,13 +1,32 @@
 memorization_nn_eval summary
-teacher_pkl=/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-001024.pkl
-student_ckpt_dir=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/t1024_NoGAN_150500
+teacher_pkl=/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-008192.pkl
+student_ckpt_dir=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/checkpoint_model_048000
 train_lmdb=/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints/mnist-32x32_lmdb
 N=1000
 num_train_images=70000
 seed=0
 teacher_num_steps=8
 conditioning_sigma=80.0
-mean_d=19.90025711
+d_t8s_mean=10.04598618
+d_t8s_std=4.02004671
+d_t8s_min=2.42835307
+d_t8s_max=22.67556381
+d_t1t8_mean=14.63987732
+d_t1t8_std=2.06601882
+d_t1t8_min=10.15741730
+d_t1t8_max=22.22951317
+delta_mean=-4.59389067
+delta_std=4.22155285
+delta_min=-15.34163284
+delta_max=9.17070007
+d_t8_tc1_mean=10.87386131
+d_t8_tc1_std=2.36610603
+d_t8_tc1_min=4.56221914
+d_t8_tc1_max=17.07223701
+mean_train_dist_mean=21.85234070
+mean_train_dist_std=1.23972082
+mean_train_dist_min=19.61337090
+mean_train_dist_max=27.34931946
 
 threshold	memorized_percent
 0.25	0.000000
