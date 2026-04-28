@@ -290,9 +290,19 @@ def plot_ratio_density(r: torch.Tensor, thresholds: list[float], out_path: str) 
     plt.close(fig)
 
 
-def plot_scatter_xy(x: torch.Tensor, y: torch.Tensor, xlabel: str, ylabel: str, title: str, out_path: str) -> None:
+def plot_scatter_xy(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    xlabel: str,
+    ylabel: str,
+    title: str,
+    out_path: str,
+    hline_y: float | None = None,
+) -> None:
     fig, ax = plt.subplots(figsize=(6.2, 5.0))
     ax.scatter(x.cpu().numpy(), y.cpu().numpy(), s=11, alpha=0.55, edgecolors="none", color="steelblue")
+    if hline_y is not None:
+        ax.axhline(hline_y, color="red", linestyle="--", linewidth=1.2)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title(title)
@@ -467,6 +477,7 @@ def main() -> None:
             "||T8_i - S_i||_2 - ||T1_i - T8_i||_2",
             "Delta vs average train distance",
             delta_vs_d_plot,
+            hline_y=0.0,
         )
 
     k = min(args.viz_cols, n)

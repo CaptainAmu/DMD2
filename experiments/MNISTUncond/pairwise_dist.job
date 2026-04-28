@@ -12,8 +12,8 @@
 #SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/pairwise_dist_%j.err
 
 export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
-export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-001024.pkl}"
-export STUDENT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/t1024_NoGAN_150500"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-008192.pkl}"
+export STUDENT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/checkpoint_model_048000"
 NUM_IMAGES=1000
 
 PYTHON=/slurm-storage/shucli/.conda/envs/dmd2_h100/bin/python

@@ -375,6 +375,14 @@ def main():
     d2_s1t1 = pixel_l2(s_1, t_1)
     d2_s1t8 = pixel_l2(s_1, t_8)
     d2_t1t8 = pixel_l2(t_1, t_8)
+    below_diag_l2 = d2_s1t8 < d2_t1t8
+    below_count = int(below_diag_l2.sum().item())
+    total_count = int(below_diag_l2.numel())
+    below_pct = (below_count / max(total_count, 1)) * 100.0
+    print(
+        f"t1t8-s1t8_l2: below y=x: {below_count}/{total_count} ({below_pct:.2f}%)",
+        flush=True,
+    )
 
     print(f"Computing LPIPS distances on {lpips_dev}...", flush=True)
     loss_fn = lpips_lib.LPIPS(net="vgg").to(lpips_dev)
