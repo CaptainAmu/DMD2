@@ -1,0 +1,51 @@
+#!/bin/bash
+#SBATCH --job-name=imagenet_top10_pairs
+#SBATCH --partition=h100
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64000
+#SBATCH --time=4:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/imagenet/logs/top10_pairs_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/imagenet/logs/top10_pairs_%j.err
+
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+DMD2_ROOT="/slurm-storage/shucli/PROJECT_FOLDER/DMD2"
+
+TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/edm-imagenet-64x64-cond-adm.pkl}"
+STUDENT_DIR="${STUDENT_DIR:-${DMD2_ROOT}/experiments/imagenet/checkpoint_model_202000}"
+TRAIN_LMDB="${TRAIN_LMDB:-${CHECKPOINT_PATH}/imagenet-64x64_lmdb}"
+OUT_DIR="${OUT_DIR:-${DMD2_ROOT}/experiments/imagenet/TopKs}"
+
+CLASS_IDX="${CLASS_IDX:-207}"
+NUM_SAMPLES="${NUM_SAMPLES:-500}"
+TOP_K="${TOP_K:-20}"
+SEED="${SEED:-0}"
+BATCH_SIZE="${BATCH_SIZE:-20}"
+NN_CHUNK="${NN_CHUNK:-100}"
+
+PYTHON=/slurm-storage/shucli/.conda/envs/dmd2_h100/bin/python
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
+mkdir -p /slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/imagenet/logs
+mkdir -p "${OUT_DIR}"
+
+$PYTHON experiments/imagenet/eval_tools/top10_teacher_student_pairs.py \
+  --teacher_pkl "${TEACHER_PKL}" \
+  --student_ckpt_dir "${STUDENT_DIR}" \
+  --train_lmdb "${TRAIN_LMDB}" \
+  --out_dir "${OUT_DIR}" \
+  --num_samples "${NUM_SAMPLES}" \
+  --top_k "${TOP_K}" \
+  --teacher_num_steps 8 \
+  --class_idx "${CLASS_IDX}" \
+  --resolution 64 \
+  --label_dim 1000 \
+  --img_channels 3 \
+  --conditioning_sigma 80.0 \
+  --batch_size "${BATCH_SIZE}" \
+  --nn_chunk "${NN_CHUNK}" \
+  --seed "${SEED}"

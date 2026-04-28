@@ -1,0 +1,49 @@
+#!/bin/bash
+#SBATCH --job-name=mnist_uncond_top10_pairs
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64000
+#SBATCH --time=4:00:00
+#SBATCH --qos=medium
+#SBATCH --output=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/top10_pairs_%j.out
+#SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/top10_pairs_%j.err
+
+export DMD2_ROOT="/slurm-storage/shucli/PROJECT_FOLDER/DMD2"
+export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-008192.pkl}"
+export STUDENT_DIR="${STUDENT_DIR:-${DMD2_ROOT}/experiments/MNISTUncond/checkpoint_model_048000}"
+export TRAIN_LMDB="${TRAIN_LMDB:-${CHECKPOINT_PATH}/mnist-32x32_lmdb}"
+
+NUM_SAMPLES="${NUM_SAMPLES:-800}"
+TOP_K="${TOP_K:-20}"
+SEED="${SEED:-0}"
+BATCH_SIZE="${BATCH_SIZE:-50}"
+NN_CHUNK="${NN_CHUNK:-200}"
+OUT_DIR="${OUT_DIR:-${DMD2_ROOT}/experiments/MNISTUncond/TopKs}"
+
+source /slurm-storage/miniconda3/etc/profile.d/conda.sh
+conda activate dmd2_h100
+
+cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
+export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:${PYTHONPATH}
+mkdir -p experiments/MNISTUncond/logs
+mkdir -p "${OUT_DIR}"
+
+python experiments/MNISTUncond/eval_tools/top10_teacher_student_pairs.py \
+  --teacher_pkl "${TEACHER_PKL}" \
+  --student_ckpt_dir "${STUDENT_DIR}" \
+  --train_lmdb "${TRAIN_LMDB}" \
+  --out_dir "${OUT_DIR}" \
+  --num_samples "${NUM_SAMPLES}" \
+  --top_k "${TOP_K}" \
+  --teacher_num_steps 8 \
+  --label_dim 0 \
+  --img_channels 1 \
+  --resolution 32 \
+  --conditioning_sigma 80.0 \
+  --batch_size "${BATCH_SIZE}" \
+  --nn_chunk "${NN_CHUNK}" \
+  --seed "${SEED}"
