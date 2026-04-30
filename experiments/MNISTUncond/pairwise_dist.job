@@ -12,21 +12,29 @@
 #SBATCH --error=/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs/pairwise_dist_%j.err
 
 export CHECKPOINT_PATH="/slurm-storage/shucli/PROJECT_FOLDER/DATA/DMD2_OT/model_checkpoints"
-export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-008192.pkl}"
-export STUDENT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/checkpoint_model_048000"
+export TEACHER_PKL="${TEACHER_PKL:-${CHECKPOINT_PATH}/mnist_uncond_edm_teacher_runs/00001-mnist-32x32-uncond-adm-edm-gpus1-batch64-fp32-mnist_uncond_edm_teacher/network-snapshot-006144.pkl}"
+export STUDENT_DIR="/slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/t6144_NoGAN_49500"
 NUM_IMAGES=1000
+COPY_OT_VIS="${COPY_OT_VIS:-100}"
 
 PYTHON=/slurm-storage/shucli/.conda/envs/dmd2_h100/bin/python
+export LD_LIBRARY_PATH="/slurm-storage/shucli/.conda/envs/dmd2_h100/lib:${LD_LIBRARY_PATH}"
 
 cd /slurm-storage/shucli/PROJECT_FOLDER/DMD2
 export PYTHONPATH=/slurm-storage/shucli/PROJECT_FOLDER/DMD2:$PYTHONPATH
 mkdir -p /slurm-storage/shucli/PROJECT_FOLDER/DMD2/experiments/MNISTUncond/logs
+
+$PYTHON -c "from scipy.optimize._lsap import linear_sum_assignment" >/dev/null 2>&1 || {
+  echo "ERROR: scipy.optimize._lsap.linear_sum_assignment is not available in environment: $PYTHON" >&2
+  exit 1
+}
 
 $PYTHON experiments/MNISTUncond/eval_tools/pairwise_dist.py \
   --student_ckpt_dir "${STUDENT_DIR}" \
   --teacher_pkl      "${TEACHER_PKL}" \
   --out_dir          "${STUDENT_DIR}" \
   --num_images       $NUM_IMAGES \
+  --copy_ot_vis      "${COPY_OT_VIS}" \
   --batch_size       20 \
   --resolution       32 \
   --label_dim        10 \

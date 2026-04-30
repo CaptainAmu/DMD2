@@ -17,6 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.patches import Rectangle
 import numpy as np
 import pickle
 import torch
@@ -171,6 +172,89 @@ def lpips_batched(
     return torch.cat(scores, dim=0)
 
 
+def pairwise_l2_squared_matrix(
+    a: torch.Tensor,
+    b: torch.Tensor,
+    chunk_size: int = 100,
+) -> torch.Tensor:
+    """Compute M[i,j] = ||a_i - b_j||_2^2 on flattened image tensors."""
+    assert a.ndim == 4 and b.ndim == 4, "expected image tensors with shape (N,C,H,W)"
+    na = a.shape[0]
+    nb = b.shape[0]
+    a_flat = a.reshape(na, -1).float().cpu()
+    b_flat = b.reshape(nb, -1).float().cpu()
+    out = torch.empty((na, nb), dtype=torch.float32)
+    for start in tqdm(range(0, na, chunk_size), desc="Pairwise L2^2 matrix", unit="chunk"):
+        end = min(start + chunk_size, na)
+        d = torch.cdist(a_flat[start:end], b_flat, p=2.0)
+        out[start:end] = d.pow(2)
+    return out
+
+
+def save_ot_heatmap(
+    M: torch.Tensor,
+    row_ind: np.ndarray,
+    col_ind: np.ndarray,
+    out_path: str,
+    title: str,
+) -> None:
+    fig, ax = plt.subplots(figsize=(8.2, 7.2))
+    im = ax.imshow(M.cpu().numpy(), cmap="viridis", aspect="auto")
+    ax.scatter(col_ind.tolist(), row_ind.tolist(), s=8, c="red", marker="s", linewidths=0, alpha=0.9)
+    ax.set_xlabel("teacher index j")
+    ax.set_ylabel("student index i")
+    ax.set_title(title)
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="L2^2 cost")
+    fig.savefig(out_path, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved {out_path}", flush=True)
+
+
+def save_ot_heatmap_aligned_cells(
+    M: torch.Tensor,
+    row_ind: np.ndarray,
+    col_ind: np.ndarray,
+    out_path: str,
+    title: str,
+) -> None:
+    m = M.cpu().numpy()
+    n_rows, n_cols = m.shape
+    fig, ax = plt.subplots(figsize=(7.2, 7.2))
+    im = ax.imshow(m, cmap="viridis", aspect="equal", interpolation="nearest", origin="upper")
+    for r, c in zip(row_ind.tolist(), col_ind.tolist()):
+        ax.add_patch(
+            Rectangle(
+                (c - 0.5, r - 0.5),
+                1.0,
+                1.0,
+                facecolor="none",
+                edgecolor="red",
+                linewidth=1.1,
+            )
+        )
+    ax.set_xlim(-0.5, n_cols - 0.5)
+    ax.set_ylim(n_rows - 0.5, -0.5)
+    ax.set_xlabel("teacher index j (local)")
+    ax.set_ylabel("student index i (local)")
+    ax.set_title(title)
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="L2^2 cost")
+    fig.savefig(out_path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved {out_path}", flush=True)
+
+
+def run_linear_sum_assignment(M: torch.Tensor) -> tuple[np.ndarray, np.ndarray]:
+    try:
+        # Use narrow LSAP import path to avoid pulling optional optimize backends.
+        from scipy.optimize._lsap import linear_sum_assignment
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to import scipy.optimize._lsap.linear_sum_assignment. "
+            "Please ensure scipy and required C++ runtime libraries are available."
+        ) from e
+    return linear_sum_assignment(M.cpu().numpy())
+
+
 def _tvec(a: np.ndarray | torch.Tensor) -> torch.Tensor:
     return torch.as_tensor(a, dtype=torch.float64).reshape(-1)
 
@@ -300,6 +384,7 @@ def main():
     parser.add_argument("--conditioning_sigma", type=float, default=80.0)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=20)
+    parser.add_argument("--copy_ot_vis", type=int, default=100)
     parser.add_argument(
         "--lpips_device",
         type=str,
@@ -401,6 +486,30 @@ def main():
     den_lp = torch.clamp(dl_t1t8.double(), min=eps)
     trig_lpips = (dl_s1t1.double() + dl_s1t8.double()) / den_lp
 
+    print("Computing OT cost matrix M (L2^2): s1 vs t8...", flush=True)
+    M_s1t8 = pairwise_l2_squared_matrix(s_1, t_8, chunk_size=args.batch_size)
+    if M_s1t8.shape[0] != args.num_images or M_s1t8.shape[1] != args.num_images:
+        print(
+            f"Warning: M shape is {tuple(M_s1t8.shape)}, expected ({args.num_images}, {args.num_images})",
+            flush=True,
+        )
+    diag_vals = torch.diagonal(M_s1t8)
+    E_distill = diag_vals.mean().item()
+    row_ind, col_ind = run_linear_sum_assignment(M_s1t8)
+    E_ot = float(M_s1t8[row_ind, col_ind].mean().item())
+    ratio_red = (E_distill / max(E_ot, 1e-12) - 1) * 100.0
+    print(f"E_Distill (diag mean of M, L2^2): {E_distill:.8f}", flush=True)
+    print(f"E_OT (OT assignment mean of M, L2^2): {E_ot:.8f}", flush=True)
+    print(f"Percenrage redundancy (E_Distill / E_OT - 1) * 100%: {ratio_red:.4f}%", flush=True)
+    print(f"matched_pairs={len(row_ind)}", flush=True)
+    vis_n = min(max(int(args.copy_ot_vis), 1), M_s1t8.shape[0], M_s1t8.shape[1])
+    M_vis = M_s1t8[:vis_n, :vis_n]
+    row_vis, col_vis = run_linear_sum_assignment(M_vis)
+    print(
+        f"Local OT visualization uses top-left {vis_n}x{vis_n} submatrix (copy_ot_vis={args.copy_ot_vis})",
+        flush=True,
+    )
+
     def _summ(name: str, arr: np.ndarray | torch.Tensor) -> None:
         t = torch.as_tensor(arr, dtype=torch.float64)
         print(
@@ -461,6 +570,13 @@ def main():
         out_path=os.path.join(out_dir, "s1t1t8_trig_lpips.png"),
         y_min=0.0,
         y_max=trig_lpips.max().item() + 1.0,
+    )
+    save_ot_heatmap_aligned_cells(
+        M=M_vis,
+        row_ind=row_vis,
+        col_ind=col_vis,
+        out_path=os.path.join(out_dir, "s1t8_ot_cost_matrix_heatmap.png"),
+        title=f"OT cost matrix M_vis (L2^2): student s1 vs teacher t8, local N={vis_n}",
     )
 
 
